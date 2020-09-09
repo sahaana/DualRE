@@ -34,6 +34,7 @@ def idx_to_onehot(target, opt, confidence=None):
 
 def get_predictor_predictions(model, dataset):
     rel_stoi, rel_itos = model.opt['rel_stoi'], model.opt['rel_itos']
+    id_itos = dataset.fields['id'].vocab.itos
     iterator_test = data.Iterator(
         dataset=dataset,
         batch_size=model.opt['batch_size'],
@@ -47,17 +48,18 @@ def get_predictor_predictions(model, dataset):
     predictions = []
     all_probs = []
     golds = []
-    all_loss = 0
+    ids = []
     for batch in iterator_test:
         inputs, target = batch_to_input(batch, model.opt['vocab_pad_id'])
         preds, probs, loss = model.predict(inputs, target)
         predictions += preds
         all_probs += probs
-        all_loss += loss
+        ids += batch.id
         golds += target.data.tolist()
     predictions = [rel_itos[p] for p in predictions]
     golds = [rel_itos[p] for p in golds]
-    return golds, predictions
+    ids = [id_itos[idx] for idx in ids]
+    return golds, predictions, ids
 
 
 def evaluate(model, dataset, evaluate_type='prf', verbose=False):
